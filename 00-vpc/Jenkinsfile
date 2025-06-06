@@ -2,25 +2,23 @@ pipeline {
     agent {
         label 'AGENT-1'
     }
-    options{
+    options {
         timeout(time: 30, unit: 'MINUTES')
         disableConcurrentBuilds()
         ansiColor('xterm')
     }
-    // environment {
-    //     DEBUG = 'true'
-    // }
 
     parameters {
-        choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Select Action')
+        choice(name: 'ACTION', choices: ['APPLY', 'DESTROY'], description: 'Select Action')
     }
+
     stages {
         stage('Init and Plan') {
             steps {
                 withAWS(region: 'us-east-1', credentials: 'aws-creds') {
                     sh """
                         cd 00-vpc
-                        terraform init -reconfigure
+                        terraform init -upgrade
                         terraform plan -out=tfplan
                     """
                 }
@@ -28,35 +26,23 @@ pipeline {
         }
 
         stage('Apply or Destroy') {
-            /* input {
-                message "Should we continue to ${params.ACTION}"
-                ok "Yes, we should."
-            } */
             steps {
                 withAWS(region: 'us-east-1', credentials: 'aws-creds') {
                     sh """
-                        cd 00-vpc
-                        if [ ${params.ACTION} == 'apply' ]
-                        then
-                            terraform apply -auto-approve tfplan
-                        elif [ ${params.ACTION} == 'destroy' ]
-                        then
-                            terraform destroy -auto-approve
-                        fi
+                      cd 00-vpc
+                      if [ ${params.ACTION} == 'apply' ]
+                      then
+                        terraform apply -auto-approve tfplan
+                      elif [ ${params.ACTION} == 'destroy' ]
+                      then
+                        terraform destroy -auto-approve
+                      fi
                     """
                 }
             }
         }
-        stage ('Trigger SG') {
-            when {
-                expression { params.ACTION == 'apply' }
-            }
-            steps{
-                build job: '10-sg', parameters: [string(name: 'ACTION', value: "apply")], wait: false
-            }
-        }
-    }
 
+        
     post {
         always{
             echo "This sections runs always"
