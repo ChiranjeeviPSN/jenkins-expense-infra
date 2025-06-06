@@ -10,7 +10,7 @@ terraform {
     bucket = "cicd-state-bucket-123"
     key    = "expense-vpc"
     region = "us-east-1"
-    dynamodb_table = "81s-locking-dev"
+    dynamodb_table = "81s-locking"
   }
 }
 
